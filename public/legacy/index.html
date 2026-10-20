@@ -283,6 +283,9 @@
     .connection-layout { max-width: 420px; padding-top: 22px; }
     .connection-status { display: flex; align-items: center; gap: 8px; color: #c3b8a5; font-size: 12px; }
     .connection-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #8e8578; }
+    .connection-status.on::before { background: #a0c27f; box-shadow: 0 0 8px #a0c27f88; }
+    .link-code-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+    .link-code { padding: 12px 16px; border: 1px dashed #5c4d36; border-radius: 8px; background: #0e0c0aa8; color: #f2e8d8; font: 500 26px "DM Mono", monospace; letter-spacing: .18em; user-select: all; }
     .connection-note { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 18px 0 30px; }
     .connection-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
     .whatsapp-link { display: inline-flex; align-items: center; gap: 8px; color: #9cc8a6; font-size: 12px; text-decoration: none; padding: 9px 0; }
@@ -504,8 +507,11 @@
     <section id="whatsappView" class="view" hidden><div class="panel">
       <header class="panel-header"><h1>WhatsApp AI</h1></header>
       <div class="connection-layout">
-        <p class="connection-status">Not connected</p><p class="connection-note">No bot service is configured. Live AI replies and task sync require a WhatsApp bot backend.</p>
-        <form id="whatsappForm"><div class="field"><label for="botNumber">Bot WhatsApp number</label><input id="botNumber" type="tel" inputmode="tel" autocomplete="off" placeholder="Country code and phone number"></div><p class="error" id="whatsappError" role="alert" hidden></p><div class="connection-actions"><button type="submit" class="primary">Save chat shortcut</button><a class="whatsapp-link" id="openWhatsApp" aria-disabled="true" target="_blank" rel="noopener noreferrer"><i data-lucide="message-circle"></i>Open WhatsApp</a></div></form>
+        <p class="connection-status" id="waStatus">Checking...</p>
+        <p class="connection-note" id="waNote"></p>
+        <div class="link-code-box" id="waCodeBox" hidden><span class="link-code" id="waCode" aria-label="Link code"></span><span class="settings-file-name" id="waExpiry"></span></div>
+        <p class="error" id="whatsappError" role="alert" hidden></p>
+        <div class="connection-actions"><button type="button" class="primary" id="waLinkButton" hidden>Link WhatsApp</button><a class="whatsapp-link" id="openWhatsApp" target="_blank" rel="noopener noreferrer" hidden><i data-lucide="message-circle"></i>Open WhatsApp</a><button type="button" class="secondary" id="waUnlinkButton" hidden>Unlink</button></div>
       </div>
     </div></section>
     <section id="settingsView" class="view" hidden><div class="panel">
@@ -2373,10 +2379,6 @@
     if (query('#calendarToday')) query('#calendarToday').onclick = () => { selectedDate = today(); const date = new Date(`${selectedDate}T12:00:00`); calendarMonth = new Date(date.getFullYear(), date.getMonth(), 1); renderCalendar(); renderDay(); refreshIcons(); };
     if (query('#addCalendarTask')) query('#addCalendarTask').onclick = event => openEditor(null, { date: selectedDate, time: firstAvailableTime(30) }, event.currentTarget);
     if (query('#openCalendarDay')) query('#openCalendarDay').onclick = () => { renderDay(); refreshIcons(); setView('day'); };
-    function updateWhatsAppShortcut(number) {
-      const link = query('#openWhatsApp'); link.setAttribute('aria-disabled', !number);
-      if (number) link.href = `https://wa.me/${number}`; else link.removeAttribute('href');
-    }
     financeEntries = loadFinanceEntries();
     const financeDateInput = query('#financeDate');
     if (financeDateInput) financeDateInput.value = today();
@@ -2450,15 +2452,66 @@
       if (financeDateInput) financeDateInput.value = today();
       notify('Finance entry saved.');
     });
-    try { const number = localStorage.getItem('orma.whatsapp.bot-number.v1') || ''; query('#botNumber').value = number; updateWhatsAppShortcut(/^[1-9]\d{6,14}$/.test(number) ? number : ''); } catch { updateWhatsAppShortcut(''); }
-    query('#whatsappForm').addEventListener('submit', event => {
-      event.preventDefault(); const value = query('#botNumber').value.trim(), number = value.replace(/[\s()+-]/g, '');
-      if (value && !/^[1-9]\d{6,14}$/.test(number)) { query('#whatsappError').textContent = 'Enter an international phone number with its country code.'; query('#whatsappError').hidden = false; return; }
-      query('#whatsappError').hidden = true;
-      try { if (number) localStorage.setItem('orma.whatsapp.bot-number.v1', number); else localStorage.removeItem('orma.whatsapp.bot-number.v1'); updateWhatsAppShortcut(number); notify(number ? 'Chat shortcut saved. Bot sync is not connected.' : 'Chat shortcut removed.'); }
-      catch { query('#whatsappError').textContent = 'Browser storage is unavailable. The shortcut could not be saved.'; query('#whatsappError').hidden = false; }
-    });
-    if (query('#openWhatsApp')) query('#openWhatsApp').onclick = event => { if (event.currentTarget.getAttribute('aria-disabled') === 'true') event.preventDefault(); };
+    (function initWhatsAppLink() {
+      let host = null;
+      try { host = window.parent !== window ? window.parent.ormaHost : null; } catch { host = null; }
+      const wa = host && host.whatsapp && host.whatsapp.available ? host.whatsapp : null;
+      const statusEl = query('#waStatus'), noteEl = query('#waNote'), codeBox = query('#waCodeBox'), codeEl = query('#waCode'), expiryEl = query('#waExpiry');
+      const errorEl = query('#whatsappError'), linkButton = query('#waLinkButton'), unlinkButton = query('#waUnlinkButton'), openLink = query('#openWhatsApp');
+      let pollTimer = null, countdownTimer = null, busy = false;
+      const showError = message => { errorEl.textContent = message || ''; errorEl.hidden = !message; };
+      const stopTimers = () => { clearInterval(pollTimer); clearInterval(countdownTimer); pollTimer = countdownTimer = null; };
+      function paint(state, detail = {}) {
+        statusEl.classList.toggle('on', state === 'linked');
+        codeBox.hidden = state !== 'pending';
+        openLink.hidden = state !== 'pending';
+        linkButton.hidden = state !== 'unlinked' && state !== 'pending';
+        unlinkButton.hidden = state !== 'linked';
+        linkButton.textContent = state === 'pending' ? 'New code' : 'Link WhatsApp';
+        linkButton.disabled = busy;
+        unlinkButton.disabled = busy;
+        if (state === 'unavailable') { statusEl.textContent = 'Not available'; noteEl.textContent = host && host.email ? 'WhatsApp linking is not set up yet.' : 'Sign in to the web app to link WhatsApp.'; }
+        if (state === 'unlinked') { statusEl.textContent = 'Not connected'; noteEl.textContent = 'Link WhatsApp to manage your to-dos by chat. You will send a one-time code to the Orma bot, which also confirms the number is yours.'; }
+        if (state === 'pending') { statusEl.textContent = 'Waiting for your message'; noteEl.textContent = 'Open WhatsApp and send the pre-filled message. This page updates as soon as it arrives.'; }
+        if (state === 'linked') { statusEl.textContent = `Connected / ${detail.number || 'WhatsApp'}`; noteEl.textContent = 'The Orma bot is connected to your account. Asking about your plan, tasks and expenses is coming soon.'; }
+      }
+      function fail(error) { busy = false; showError(error && error.message ? error.message : 'Something went wrong. Please try again.'); }
+      function beginPending(result) {
+        stopTimers();
+        codeEl.textContent = result.code;
+        if (/^https:\/\/wa\.me\//.test(result.waLink || '')) openLink.href = result.waLink; else openLink.removeAttribute('href');
+        const expiresAt = Date.now() + (result.expiresInSeconds || 600) * 1000;
+        const tick = () => {
+          const left = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+          expiryEl.textContent = left ? `Expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '';
+          if (!left) { stopTimers(); paint('unlinked'); showError('That code expired. Get a new one.'); }
+        };
+        tick();
+        countdownTimer = setInterval(tick, 1000);
+        pollTimer = setInterval(() => {
+          if (currentView !== 'whatsapp') return;
+          wa.getStatus().then(status => { if (status.linked) { stopTimers(); paint('linked', status); notify('WhatsApp connected.'); } }).catch(() => {});
+        }, 3000);
+        paint('pending');
+      }
+      function refresh() {
+        if (!wa) { paint('unavailable'); return; }
+        wa.getStatus().then(status => { showError(''); paint(status.linked ? 'linked' : (pollTimer ? 'pending' : 'unlinked'), status); }).catch(error => { paint('unlinked'); fail(error); });
+      }
+      linkButton.onclick = () => {
+        if (!wa || busy) return;
+        busy = true; showError(''); paint(pollTimer ? 'pending' : 'unlinked');
+        wa.start().then(result => { busy = false; if (result.linked) { stopTimers(); paint('linked', result); } else beginPending(result); }).catch(error => { fail(error); paint(pollTimer ? 'pending' : 'unlinked'); });
+      };
+      unlinkButton.onclick = () => {
+        if (!wa || busy || !window.confirm('Unlink WhatsApp? The bot will stop recognising this number.')) return;
+        busy = true; showError(''); paint('linked');
+        wa.unlink().then(() => { busy = false; stopTimers(); paint('unlinked'); notify('WhatsApp unlinked.'); }).catch(error => { fail(error); paint('linked'); });
+      };
+      document.querySelectorAll('[data-view="whatsapp"]').forEach(button => button.addEventListener('click', refresh));
+      window.addEventListener('pagehide', stopTimers);
+      refresh();
+    })();
     const mapViewport = query('#mapViewport');
     const mapTouchPoints = new Map();
     let mapPinch = null;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { env } from '../../lib/env'
 import { onFirebaseAuthStateChanged, signOutFirebase } from '../../services/auth/firebaseAuthService'
+import { getLinkStatus, relayConfigured, startLink, unlinkWhatsApp } from '../../services/whatsapp/relayClient'
 import {
   CLOUD_UPDATED_EVENT,
   getSyncStatus,
@@ -31,6 +32,12 @@ function publishHost(email: string | null) {
     }),
     subscribe: subscribeSyncStatus,
     signOut: () => signOutFirebase(),
+    whatsapp: {
+      available: Boolean(email) && relayConfigured(),
+      getStatus: getLinkStatus,
+      start: startLink,
+      unlink: unlinkWhatsApp,
+    },
   }
 }
 

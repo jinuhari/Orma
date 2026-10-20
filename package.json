@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty",
-    "lint": "oxlint src tests",
+    "lint": "oxlint src tests relay",
     "test": "vitest run",
     "test:watch": "vitest",
     "pwa:build": "npm run build",
@@ -19,7 +19,9 @@
     "desktop:dev": "concurrently -k \"vite --host 127.0.0.1 --port 4173 --strictPort\" \"wait-on tcp:4173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:4173 electron electron/main.cjs\"",
     "desktop:pack": "npm run build && electron-builder --mac --win",
     "icons": "node scripts/generate-icons.mjs",
-    "site:deploy": "npm run build && firebase deploy --only hosting,firestore:rules"
+    "site:deploy": "npm run build && firebase deploy --only hosting,firestore:rules",
+    "relay:dev": "npx wrangler dev --config relay/wrangler.toml",
+    "relay:deploy": "npx wrangler deploy --config relay/wrangler.toml"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",

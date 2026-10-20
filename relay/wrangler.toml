@@ -1,0 +1,20 @@
+name = "orma-relay"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# Create the namespace with: npx wrangler kv namespace create LINKS
+# then paste the returned id below.
+[[kv_namespaces]]
+binding = "LINKS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+FIREBASE_PROJECT_ID = "jinu-sample-app"
+ALLOWED_ORIGINS = "https://jinu-sample-app.web.app,https://jinu-sample-app.firebaseapp.com,http://127.0.0.1:5173,http://127.0.0.1:5180,app://orma"
+
+# Set these as secrets (never commit them), each with: npx wrangler secret put NAME
+#   WHATSAPP_VERIFY_TOKEN      any long random string, also entered in Meta's webhook setup
+#   WHATSAPP_APP_SECRET        Meta app secret (App settings > Basic)
+#   WHATSAPP_TOKEN             permanent system-user access token
+#   WHATSAPP_PHONE_NUMBER_ID   from the WhatsApp API Setup page
+#   WHATSAPP_BOT_NUMBER        bot number in international digits, for the wa.me link

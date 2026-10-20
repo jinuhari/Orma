@@ -13,6 +13,18 @@ declare global {
       getStatus: () => { status: string; label: string; detail: string }
       subscribe: (listener: () => void) => () => void
       signOut: () => Promise<void>
+      whatsapp?: {
+        available: boolean
+        getStatus: () => Promise<{ linked: boolean; number: string | null }>
+        start: () => Promise<{
+          linked: boolean
+          number?: string
+          code?: string
+          expiresInSeconds?: number
+          waLink?: string
+        }>
+        unlink: () => Promise<{ linked: boolean; number: string | null }>
+      }
     }
   }
 }
