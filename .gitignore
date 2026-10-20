@@ -18,6 +18,10 @@ dist-ssr
 coverage
 .vitest
 npm-cache
+.firebase
+.agents
+.claude
+skills-lock.json
 
 # Editor directories and files
 .vscode/*
