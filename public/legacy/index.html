@@ -299,6 +299,7 @@
     .finance-line { fill: none; stroke: #9ad0a8; stroke-width: 2.5; }
     .finance-area { fill: #9ad0a82a; }
     .finance-point { fill: #9ad0a8; stroke: #0d0b08; stroke-width: 1.5; }
+    .finance-tick { fill: #a79e90; font: 10px "DM Mono", monospace; }
     .finance-empty { color: #9f9689; font-size: 12px; text-align: center; padding: 70px 12px; }
     .finance-list { display: grid; gap: 8px; max-height: 220px; overflow: auto; }
     .finance-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 10px; align-items: center; border: 1px solid #2f281f; border-radius: 8px; padding: 8px 10px; background: #11100d; }
@@ -317,6 +318,7 @@
       .queue-task .area-label { display: none; }
     }
     @media (max-width: 600px) {
+      #dockSignOut { display: none; }
       .topbar { top: 20px; width: 262px; height: 36px; } .topbar button { font-size: 12px; }
       .actions { top: 74px; right: 16px; gap: 8px; } .actions .icon-button { width: 34px; height: 34px; border-radius: 10px; }
       .dock { top: auto; left: 50%; bottom: max(15px, env(safe-area-inset-bottom)); transform: translateX(-50%); flex-direction: row; width: 240px; height: 56px; padding: 7px; justify-content: space-between; border-radius: 16px; }
@@ -412,6 +414,7 @@
     <button class="icon-button" data-view="finance" aria-label="Finance" data-tooltip="Finance"><i data-lucide="chart-column"></i></button>
     <button class="icon-button" data-view="whatsapp" aria-label="WhatsApp AI connection" data-tooltip="WhatsApp AI" aria-pressed="false"><i data-lucide="waypoints"></i></button>
     <button class="icon-button settings" id="openSettings" data-view="settings" aria-label="Settings" data-tooltip="Settings" aria-pressed="false"><i data-lucide="settings"></i></button>
+    <button class="icon-button" id="dockSignOut" aria-label="Log out" data-tooltip="Log out" hidden><i data-lucide="log-out"></i></button>
   </aside>
   <div class="actions">
     <button class="icon-button" id="toggleCompleted" aria-label="Hide completed tasks" data-tooltip="Hide completed" aria-pressed="false"><i data-lucide="eye"></i></button>
@@ -478,7 +481,7 @@
           <section class="finance-card" aria-labelledby="financeAddTitle">
             <h2 id="financeAddTitle">Add Expense</h2>
             <form id="financeForm">
-              <div class="field"><label for="financeAmount">Amount</label><input id="financeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></div>
+              <div class="field"><label for="financeAmount">Amount (₹)</label><input id="financeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></div>
               <div class="field"><label for="financeNote">Note</label><input id="financeNote" maxlength="140" placeholder="Coffee, transport, groceries..."></div>
               <div class="field"><label for="financeDate">Date</label><input id="financeDate" type="date" required></div>
               <p class="error" id="financeError" role="alert" hidden></p>
@@ -508,7 +511,7 @@
     <section id="settingsView" class="view" hidden><div class="panel">
       <header class="panel-header"><div><h1>Settings</h1><p class="subheading">Control timer behavior, visibility, ambience, and backups.</p></div></header>
       <div class="settings-layout">
-        <section class="settings-card" id="settingsAccountCard" aria-labelledby="settingsAccountTitle" hidden>
+        <section class="settings-card" id="settingsAccountCard" aria-labelledby="settingsAccountTitle">
           <h2 id="settingsAccountTitle">Account</h2>
           <div class="settings-row"><div class="account-identity"><strong id="accountEmail">Signed in</strong><span class="settings-file-name" id="accountSyncStatus"></span></div><button class="secondary" id="signOutButton" type="button">Log out</button></div>
         </section>
@@ -718,7 +721,8 @@
       main: query('#waterPathMain'),
       highlight: query('#waterPathHighlight')
     };
-    const financeCurrency = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+    const financeCurrency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
+    const financeCompact = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', notation: 'compact', maximumFractionDigits: 1 });
     function loadFinanceEntries() {
       try {
         const parsed = JSON.parse(localStorage.getItem(financeStorageKey) || '[]');
@@ -749,71 +753,55 @@
         notify('Finance data could not be saved. Browser storage may be unavailable.');
       }
     }
-    function renderFinanceGraph(entriesByDay) {
+    function renderFinanceGraph(series, mode) {
       const graph = query('#financeGraph');
       const empty = query('#financeGraphEmpty');
       if (!graph || !empty) return;
       graph.replaceChildren();
-      if (!entriesByDay.length) {
-        graph.hidden = true;
-        empty.hidden = false;
-        return;
-      }
-      graph.hidden = false;
-      empty.hidden = true;
-      const width = 560;
-      const height = 220;
-      const padding = { top: 18, right: 16, bottom: 26, left: 42 };
-      const innerWidth = width - padding.left - padding.right;
-      const innerHeight = height - padding.top - padding.bottom;
-      const maxAmount = Math.max(1, ...entriesByDay.map(entry => entry.total));
-      const minDate = entriesByDay[0].date;
-      const maxDate = entriesByDay[entriesByDay.length - 1].date;
-      const daySpan = Math.max(1, (new Date(`${maxDate}T12:00:00`) - new Date(`${minDate}T12:00:00`)) / 86400000);
-      const scaleX = date => {
-        if (entriesByDay.length === 1) return padding.left + innerWidth / 2;
-        return padding.left + (((new Date(`${date}T12:00:00`) - new Date(`${minDate}T12:00:00`)) / 86400000) / daySpan) * innerWidth;
+      const hasSpending = series.some(point => point.total > 0);
+      graph.hidden = !hasSpending;
+      empty.hidden = hasSpending;
+      if (!hasSpending) return;
+      const svg = (name, attributes = {}) => {
+        const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+        Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+        return node;
       };
-      const scaleY = amount => padding.top + (1 - amount / maxAmount) * innerHeight;
-      const points = entriesByDay.map(entry => ({ x: scaleX(entry.date), y: scaleY(entry.total), date: entry.date, total: entry.total }));
-      const areaPath = [`M ${points[0].x.toFixed(2)} ${padding.top + innerHeight}`]
-        .concat(points.map(point => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`))
-        .concat([`L ${points[points.length - 1].x.toFixed(2)} ${padding.top + innerHeight} Z`])
-        .join(' ');
-      const linePath = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
-      const axis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      axis.setAttribute('class', 'finance-axis');
-      axis.setAttribute('x1', String(padding.left));
-      axis.setAttribute('y1', String(padding.top + innerHeight));
-      axis.setAttribute('x2', String(width - padding.right));
-      axis.setAttribute('y2', String(padding.top + innerHeight));
-      const topGrid = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      topGrid.setAttribute('class', 'finance-grid-line');
-      topGrid.setAttribute('x1', String(padding.left));
-      topGrid.setAttribute('y1', String(padding.top));
-      topGrid.setAttribute('x2', String(width - padding.right));
-      topGrid.setAttribute('y2', String(padding.top));
-      const midGrid = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      midGrid.setAttribute('class', 'finance-grid-line');
-      midGrid.setAttribute('x1', String(padding.left));
-      midGrid.setAttribute('y1', String(padding.top + innerHeight / 2));
-      midGrid.setAttribute('x2', String(width - padding.right));
-      midGrid.setAttribute('y2', String(padding.top + innerHeight / 2));
-      const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      area.setAttribute('class', 'finance-area');
-      area.setAttribute('d', areaPath);
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      line.setAttribute('class', 'finance-line');
-      line.setAttribute('d', linePath);
-      const markers = points.map(point => {
-        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        marker.setAttribute('class', 'finance-point');
-        marker.setAttribute('cx', point.x.toFixed(2));
-        marker.setAttribute('cy', point.y.toFixed(2));
-        marker.setAttribute('r', '3.2');
-        return marker;
+      const width = 560, height = 220, padding = { top: 18, right: 16, bottom: 30, left: 56 };
+      const innerWidth = width - padding.left - padding.right, innerHeight = height - padding.top - padding.bottom;
+      const maxTotal = Math.max(...series.map(point => point.total));
+      const step = 10 ** Math.floor(Math.log10(maxTotal)) / 2;
+      const niceMax = Math.ceil(maxTotal / step) * step;
+      const scaleX = index => padding.left + (series.length === 1 ? innerWidth / 2 : index / (series.length - 1) * innerWidth);
+      const scaleY = amount => padding.top + (1 - amount / niceMax) * innerHeight;
+      const points = series.map((point, index) => ({ ...point, x: scaleX(index), y: scaleY(point.total) }));
+      const baseline = padding.top + innerHeight;
+      const nodes = [];
+      [0, .5, 1].forEach(fraction => {
+        const y = scaleY(niceMax * fraction);
+        nodes.push(svg('line', { class: fraction === 0 ? 'finance-axis' : 'finance-grid-line', x1: padding.left, y1: y, x2: width - padding.right, y2: y }));
+        const label = svg('text', { class: 'finance-tick', x: padding.left - 8, y: y + 3.5, 'text-anchor': 'end' });
+        label.textContent = fraction === 0 ? '\u20B90' : financeCompact.format(niceMax * fraction);
+        nodes.push(label);
       });
-      graph.append(topGrid, midGrid, axis, area, line, ...markers);
+      const labelEvery = Math.ceil(series.length / 7);
+      points.forEach((point, index) => {
+        if (index % labelEvery) return;
+        const label = svg('text', { class: 'finance-tick', x: point.x, y: height - 8, 'text-anchor': 'middle' });
+        const date = new Date(`${point.date}T12:00:00`);
+        label.textContent = mode === 'month' ? String(date.getDate()) : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        nodes.push(label);
+      });
+      nodes.push(svg('path', { class: 'finance-area', d: `M ${points[0].x.toFixed(2)} ${baseline} ${points.map(point => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ')} L ${points[points.length - 1].x.toFixed(2)} ${baseline} Z` }));
+      nodes.push(svg('path', { class: 'finance-line', d: points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ') }));
+      points.filter(point => point.total > 0).forEach(point => {
+        const marker = svg('circle', { class: 'finance-point', cx: point.x.toFixed(2), cy: point.y.toFixed(2), r: 3.6 });
+        const tip = svg('title');
+        tip.textContent = `${new Date(`${point.date}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${financeCurrency.format(point.total)}`;
+        marker.append(tip);
+        nodes.push(marker);
+      });
+      graph.append(...nodes);
     }
     function renderFinance() {
       const totalEl = query('#financeTotal');
@@ -849,14 +837,22 @@
       periodLabel.textContent = financeMode === 'month' ? 'Selected month' : 'Selected day';
       totalEl.textContent = financeCurrency.format(total);
       todayEl.textContent = financeCurrency.format(periodAmount);
-      const grouped = new Map();
-      (financeMode === 'month' ? periodEntries : financeEntries).forEach(entry => {
-        grouped.set(entry.date, (grouped.get(entry.date) || 0) + entry.amount);
-      });
-      const entriesByDay = [...grouped.entries()]
-        .map(([date, totalAmount]) => ({ date, total: Math.round(totalAmount * 100) / 100 }))
-        .sort((first, second) => first.date.localeCompare(second.date));
-      renderFinanceGraph(entriesByDay);
+      const totalsByDate = new Map();
+      financeEntries.forEach(entry => totalsByDate.set(entry.date, (totalsByDate.get(entry.date) || 0) + entry.amount));
+      const seriesDates = [];
+      if (financeMode === 'month') {
+        const [year, month] = selectedMonth.split('-').map(Number);
+        for (let day = 1; day <= new Date(year, month, 0).getDate(); day++) seriesDates.push(`${selectedMonth}-${String(day).padStart(2, '0')}`);
+      } else {
+        for (let offset = 6; offset >= 0; offset--) {
+          const date = new Date(`${financeSelectedDate}T12:00:00`);
+          date.setDate(date.getDate() - offset);
+          seriesDates.push(localDate(date));
+        }
+      }
+      renderFinanceGraph(seriesDates.map(date => ({ date, total: Math.round((totalsByDate.get(date) || 0) * 100) / 100 })), financeMode);
+      const trendTitle = query('#financeTrendTitle');
+      if (trendTitle) trendTitle.textContent = financeMode === 'month' ? 'Spending this month' : 'Last 7 days';
       list.replaceChildren();
       periodEntries.slice(0, 40).forEach(entry => {
         const row = document.createElement('article');
@@ -2825,14 +2821,25 @@
     (function initAccountCard() {
       let host = null;
       try { host = window.parent !== window ? window.parent.ormaHost : null; } catch { host = null; }
-      if (!host || !host.email) return;
-      query('#settingsAccountCard').hidden = false;
+      const signOutButton = query('#signOutButton'), dockSignOut = query('#dockSignOut');
+      if (!host || !host.email) {
+        query('#accountEmail').textContent = 'Not signed in';
+        query('#accountSyncStatus').textContent = 'Data is saved on this device only. Sign in on the web app to sync and log out.';
+        signOutButton.hidden = true;
+        return;
+      }
       query('#accountEmail').textContent = host.email;
       const paintStatus = () => { const info = host.getStatus(); query('#accountSyncStatus').textContent = info.detail || info.label; };
       paintStatus();
       const stopStatus = host.subscribe(paintStatus);
       window.addEventListener('pagehide', stopStatus);
-      query('#signOutButton').onclick = () => { const button = query('#signOutButton'); button.disabled = true; button.textContent = 'Logging out...'; host.signOut().catch(() => { button.disabled = false; button.textContent = 'Log out'; notify('Could not log out. Please try again.'); }); };
+      dockSignOut.hidden = false;
+      const logOut = () => {
+        signOutButton.disabled = true; dockSignOut.disabled = true; signOutButton.textContent = 'Logging out...';
+        host.signOut().catch(() => { signOutButton.disabled = false; dockSignOut.disabled = false; signOutButton.textContent = 'Log out'; notify('Could not log out. Please try again.'); });
+      };
+      signOutButton.onclick = logOut;
+      dockSignOut.onclick = logOut;
     })();
   </script>
 </body>
