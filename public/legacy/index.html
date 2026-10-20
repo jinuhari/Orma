@@ -573,12 +573,6 @@
     const DAY_SLOTS = (DAY_END_MINUTES - DAY_START_MINUTES) / 5;
     function localDate(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
     const today = () => localDate(new Date());
-    const seeds = [
-      ['Promotion', 'career'], ['Skills', 'career'], ['Mentorship', 'career'], ['Side projects', 'career'], ['Work-life balance', 'career'],
-      ['Business plan', 'money'], ['Co-founders', 'money'], ['Product-market fit', 'money'], ['Hiring', 'money'], ['Revenue', 'money'],
-      ['Morning walk', 'health'], ['Sleep routine', 'health'], ['Meal planning', 'health'], ['Meditation', 'health'], ['Stretching', 'health'], ['Annual checkup', 'health'], ['Hydration', 'health'],
-      ['Kids', 'family'], ['Partner', 'family'], ['Startup', 'money', 'startup'], ['MVP launch', 'money', 'launch'], ['Networking', 'career', 'networking'], ['Resume', 'career', 'resume'], ['Mental health', 'health', 'mental'], ['Fitness', 'health', 'fitness']
-    ].map(([title, area, mapRole], index) => ({ id: `seed-${index}`, title, area, mapRole: mapRole || null, done: false, duration: 30, date: null, time: null, deadline: null, private: false, parent: null, color: null, pos: null }));
     class TaskStore {
       constructor() { this.key = 'orma.tasks.v5'; this.listeners = new Set(); this.storageError = false; this.tasks = this.load(); }
       migrateMainNodes(tasks) {
@@ -632,7 +626,7 @@
             }
           }
         } catch { this.storageError = true; }
-        return this.migrateMainNodes(seeds.map(task => ({ ...task })));
+        return [];
       }
       subscribe(listener) { this.listeners.add(listener); }
       publish() {
@@ -1608,6 +1602,7 @@
       }
       let maxY = 690;
       for (const [area, root] of Object.entries(roots)) {
+        if (!tasks.length) continue;
         connect('center', center, `root-${area}`, root, areas[area].color);
         mapNode(`root-${area}`, areas[area].name, root, { color: areas[area].color, root: true, area, onActivate: event => openAreaRootEditor(area, event?.currentTarget) });
       }

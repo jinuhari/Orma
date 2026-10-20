@@ -7,6 +7,11 @@ describe('LocalStorageAdapter', () => {
     localStorage.clear()
   })
 
+  it('starts without tasks on a fresh device', async () => {
+    const snapshot = await new LocalStorageAdapter().load()
+    expect(snapshot.tasks).toEqual([])
+  })
+
   it('loads v5 tasks when available', async () => {
     const adapter = new LocalStorageAdapter()
     localStorage.setItem(
