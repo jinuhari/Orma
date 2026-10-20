@@ -510,7 +510,7 @@
       <div class="settings-layout">
         <section class="settings-card" id="settingsAccountCard" aria-labelledby="settingsAccountTitle" hidden>
           <h2 id="settingsAccountTitle">Account</h2>
-          <div class="settings-row"><div class="account-identity"><strong id="accountEmail">Signed in</strong><span class="settings-file-name" id="accountSyncStatus"></span></div><button class="secondary" id="signOutButton" type="button">Sign out</button></div>
+          <div class="settings-row"><div class="account-identity"><strong id="accountEmail">Signed in</strong><span class="settings-file-name" id="accountSyncStatus"></span></div><button class="secondary" id="signOutButton" type="button">Log out</button></div>
         </section>
         <section class="settings-card" aria-labelledby="settingsDisplayTitle">
           <h2 id="settingsDisplayTitle">Display</h2>
@@ -2836,7 +2836,7 @@
       paintStatus();
       const stopStatus = host.subscribe(paintStatus);
       window.addEventListener('pagehide', stopStatus);
-      query('#signOutButton').onclick = () => { query('#signOutButton').disabled = true; host.signOut().catch(() => { query('#signOutButton').disabled = false; notify('Could not sign out. Please try again.'); }); };
+      query('#signOutButton').onclick = () => { const button = query('#signOutButton'); button.disabled = true; button.textContent = 'Logging out...'; host.signOut().catch(() => { button.disabled = false; button.textContent = 'Log out'; notify('Could not log out. Please try again.'); }); };
     })();
   </script>
 </body>

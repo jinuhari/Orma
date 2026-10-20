@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { User } from 'firebase/auth'
 
+import { env } from '../../lib/env'
 import { hasFirebaseConfig } from '../../lib/firebaseClient'
 import { onFirebaseAuthStateChanged } from '../../services/auth/firebaseAuthService'
 import { startCloudSync } from '../../services/sync/cloudSync'
@@ -11,7 +12,7 @@ const MIN_SPLASH_MS = 1800
 const SPLASH_FADE_MS = 480
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const firebaseReady = hasFirebaseConfig()
+  const firebaseReady = hasFirebaseConfig() && !env.demoMode
   const [user, setUser] = useState<User | null>(null)
   const [authResolved, setAuthResolved] = useState(!firebaseReady)
   const [syncedUid, setSyncedUid] = useState<string | null>(null)
@@ -62,7 +63,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {ready ? (uid ? children : <SignInScreen />) : null}
+      {ready ? (uid || env.demoMode ? children : <SignInScreen />) : null}
       {splashGone ? null : <SplashScreen leaving={ready} />}
     </>
   )

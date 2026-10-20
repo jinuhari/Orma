@@ -36,7 +36,7 @@ This repository is in an incremental migration from a single-file app to a produ
 
 ## Distribution
 
-The hosted site (`/`) is the public download page. One Google account opens the same data everywhere.
+The hosted site (`/`) is the public download page. Open `/map` to sign in with Google or email/password. Data syncs through your Firebase account across devices.
 
 1. Web + installable PWA (iPhone, iPad, Android, any desktop browser)
    - Visitors open the site; Android shows an Install button, iOS users follow the Add to Home Screen steps on the page.
@@ -45,7 +45,7 @@ The hosted site (`/`) is the public download page. One Google account opens the 
    - Firebase Hosting's free plan rejects binaries, so publish them as assets of a GitHub release on `jinuhari/Orma` (names must stay `Orma-mac.dmg` and `Orma-Setup.exe`). Pushing a `v*` tag runs `.github/workflows/desktop-release.yml`, which builds both and attaches them.
    - The site links to `releases/latest/download/...`; override with `VITE_DOWNLOAD_MAC_URL` / `VITE_DOWNLOAD_WINDOWS_URL`.
    - Publish the site: `npm run site:deploy` (build + hosting + Firestore rules).
-3. Desktop sign-in: the app opens the system browser at `/desktop-sign-in`, then returns via the `orma://` link.
+3. Desktop Google sign-in: the app opens the system browser at `/desktop-sign-in`, then returns via the `orma://` link. Email/password sign-in stays inside the app.
 4. Native mobile shells (optional, not used for Google sign-in yet): `npm run mobile:ios`, `npm run mobile:android`.
 
 Icons are generated from `scripts/generate-icons.mjs` (`npm run icons`).
@@ -62,10 +62,10 @@ Important:
 - Never commit real secrets.
 - `SUPABASE_SERVICE_ROLE_KEY` and payment/webhook secrets are server-only.
 
-### Google sign-in and cloud sync (Firebase)
+### Authentication and cloud sync (Firebase)
 
 1. Create or open your Firebase project at https://console.firebase.google.com/.
-2. Authentication > Sign-in method: enable **Google**.
+2. Authentication > Sign-in method: enable **Google** and **Email/Password**.
 3. Authentication > Settings > Authorized domains: make sure your hosting domain is listed.
 4. Firestore Database: click **Create database** (production mode). Then run `firebase deploy --only firestore:rules`.
 5. Project settings > General > Your apps > Web app: copy config into `.env`:
@@ -73,6 +73,10 @@ Important:
    - Optional: `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_PUBLIC_APP_URL`
 
 Data model: each account stores one document per saved item under `users/{uid}/store/{key}` (tasks, map layout, finance, settings, photo). Rules in `firestore.rules` restrict access to the owner. Conflicts resolve last-writer-wins per item.
+
+The sign-in screen includes email account creation and password reset through Firebase's hosted email action handler. In the full app, open **Settings > Account > Log out** to leave the account. Logout attempts to upload pending changes before ending the session; offline changes remain on this device for the same account.
+
+For a local demo without authentication or cloud sync, run `VITE_DEMO_MODE=true npm run dev`. This flag is development-only and is ignored in production builds. Demo data stays in browser storage; use a separate browser profile or origin from real accounts.
 
 ## Repository layout
 

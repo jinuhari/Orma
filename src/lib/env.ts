@@ -14,6 +14,8 @@ export const env = {
   firebaseStorageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
   appEnv: (import.meta.env.VITE_APP_ENV as string | undefined) ?? 'development',
   publicAppUrl: import.meta.env.VITE_PUBLIC_APP_URL as string | undefined,
+  // Dev server only: skips sign-in and cloud sync for local demos.
+  demoMode: import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true',
   downloadMacUrl: (import.meta.env.VITE_DOWNLOAD_MAC_URL as string | undefined) || `${RELEASES}/Orma-mac.dmg`,
   downloadWindowsUrl:
     (import.meta.env.VITE_DOWNLOAD_WINDOWS_URL as string | undefined) || `${RELEASES}/Orma-Setup.exe`,

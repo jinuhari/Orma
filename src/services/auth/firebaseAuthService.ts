@@ -1,6 +1,9 @@
 import {
+  createUserWithEmailAndPassword,
   GoogleAuthProvider,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
   signInWithCredential,
   signInWithPopup,
   signInWithRedirect,
@@ -93,6 +96,18 @@ export function listenForDesktopSignIn(onError: (message: string) => void) {
       onError(error instanceof Error ? error.message : 'Sign-in could not be completed.')
     }
   })
+}
+
+export function signInWithEmailPassword(email: string, password: string) {
+  return signInWithEmailAndPassword(getFirebaseAuth(), email.trim(), password)
+}
+
+export function signUpWithEmailPassword(email: string, password: string) {
+  return createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password)
+}
+
+export function resetEmailPassword(email: string) {
+  return sendPasswordResetEmail(getFirebaseAuth(), email.trim())
 }
 
 export async function signOutFirebase() {

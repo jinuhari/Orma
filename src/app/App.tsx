@@ -3,12 +3,13 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthGate } from '../features/auth/AuthGate'
 import { DesktopSignInPage } from '../features/site/DesktopSignInPage'
 import { LandingPage } from '../features/site/LandingPage'
+import { env } from '../lib/env'
 import { isStandalone } from '../lib/platform'
 import { AppRoutes } from './routes'
 
 // Installed apps skip the marketing site and open straight into the (signed-in) planner.
 function HomeRoute() {
-  return isStandalone() ? <Navigate to="/map" replace /> : <LandingPage />
+  return isStandalone() || env.demoMode ? <Navigate to="/map" replace /> : <LandingPage />
 }
 
 export function App() {

@@ -7,6 +7,7 @@ import { getSyncStatus, getSyncStatusDetail, subscribeSyncStatus } from '../../s
 export function AccountPage() {
   const [user, setUser] = useState<User | null>(null)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const status = useSyncExternalStore(subscribeSyncStatus, getSyncStatus)
   const detail = useSyncExternalStore(subscribeSyncStatus, getSyncStatusDetail)
 
@@ -14,8 +15,11 @@ export function AccountPage() {
 
   async function handleSignOut() {
     setBusy(true)
+    setError(null)
     try {
       await signOutFirebase()
+    } catch {
+      setError('Could not log out. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -25,7 +29,7 @@ export function AccountPage() {
     <section className="account-page" aria-labelledby="accountTitle">
       <header className="account-header">
         <h1 id="accountTitle">Account</h1>
-        <p>Your map is saved to your Google account and follows you to every device.</p>
+        <p>Your Orma account</p>
       </header>
 
       <article className="account-card">
@@ -41,13 +45,14 @@ export function AccountPage() {
           </div>
         </div>
         <p className={status === 'error' ? 'error' : 'ok account-status'}>
-          {detail || (status === 'synced' ? 'All changes saved to your Google account.' : 'Syncing…')}
+          {detail || (status === 'synced' ? 'All changes saved to your Orma account.' : 'Syncing…')}
         </p>
         <div className="account-actions">
           <button type="button" onClick={() => void handleSignOut()} disabled={busy}>
-            {busy ? 'Signing out…' : 'Sign out'}
+            {busy ? 'Logging out...' : 'Log out'}
           </button>
         </div>
+        {error ? <p className="error" role="alert">{error}</p> : null}
       </article>
     </section>
   )

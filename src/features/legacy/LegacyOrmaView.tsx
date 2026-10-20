@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { env } from '../../lib/env'
 import { onFirebaseAuthStateChanged, signOutFirebase } from '../../services/auth/firebaseAuthService'
 import {
   CLOUD_UPDATED_EVENT,
@@ -14,7 +15,7 @@ const FRAME_SAFE_KEYS = new Set(['orma.tasks.v5', 'orma.profile.image.v2'])
 const STATUS_LABEL: Record<SyncStatus, string> = {
   idle: 'Not syncing',
   syncing: 'Syncing…',
-  synced: 'Saved to your Google account',
+  synced: 'Saved to your Orma account',
   offline: 'Offline · changes sync when you reconnect',
   error: 'Sync paused',
 }
@@ -34,23 +35,20 @@ function publishHost(email: string | null) {
 }
 
 export function LegacyOrmaView() {
-  const [email, setEmail] = useState<string | null>(null)
+  const [hostReady, setHostReady] = useState(env.demoMode)
   const [reloadKey, setReloadKey] = useState(0)
 
-  useEffect(
-    () =>
-      onFirebaseAuthStateChanged((user) => {
-        setEmail(user?.email ?? null)
-      }),
-    [],
-  )
-
   useEffect(() => {
-    publishHost(email)
+    if (env.demoMode) return
+    const unsubscribe = onFirebaseAuthStateChanged((user) => {
+      publishHost(user?.email ?? null)
+      setHostReady(true)
+    })
     return () => {
+      unsubscribe()
       delete window.ormaHost
     }
-  }, [email])
+  }, [])
 
   useEffect(() => {
     const onCloudUpdate = (event: Event) => {
@@ -64,12 +62,12 @@ export function LegacyOrmaView() {
 
   return (
     <section className="legacy-view" aria-label="Orma map view">
-      <iframe
+      {hostReady ? <iframe
         key={reloadKey}
         className="legacy-frame"
         title="Orma Legacy Application"
         src="/legacy/index.html"
-      />
+      /> : null}
     </section>
   )
 }
