@@ -42,6 +42,19 @@ Important:
 - Never commit real secrets.
 - `SUPABASE_SERVICE_ROLE_KEY` and payment/webhook secrets are server-only.
 
+### Firebase Authentication (email/password)
+
+1. Create or open your Firebase project at https://console.firebase.google.com/.
+2. In Firebase Console, go to Authentication > Sign-in method and enable Email/Password.
+3. In Project settings > General > Your apps > Web app, copy config values.
+4. Fill these public client variables in `.env`:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_APP_ID`
+   - Optional: `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_STORAGE_BUCKET`
+5. Restart dev server and open `/account` route for sign in/sign up/sign out with email/password.
+
 ## Repository layout
 
 - `src/app`: app shell, providers, routes

@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { CalendarPage } from '../features/calendar/CalendarPage'
+import { AccountPage } from '../features/auth/AccountPage'
 import { AppShell } from '../components/layout/AppShell'
 import { FocusPage } from '../features/focus/FocusPage'
 import { LegacyOrmaView } from '../features/legacy/LegacyOrmaView'
@@ -48,15 +49,7 @@ export function AppRoutes() {
               />
             }
           />
-          <Route
-            path="/account"
-            element={
-              <PlaceholderPage
-                title="Account"
-                note="Authentication and account controls are planned in Stage D."
-              />
-            }
-          />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>

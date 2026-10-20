@@ -1,5 +1,10 @@
 import { AppRoutes } from './routes'
+import { AuthGate } from '../features/auth/AuthGate'
 
 export function App() {
-  return <AppRoutes />
+  return (
+    <AuthGate>
+      <AppRoutes />
+    </AuthGate>
+  )
 }
