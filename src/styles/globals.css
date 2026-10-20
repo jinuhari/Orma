@@ -1,0 +1,636 @@
+:root {
+  color-scheme: dark;
+  --bg: #030303;
+  --panel: #12100d;
+  --line: #2b251d;
+  --text: #e0ddd7;
+  --muted: #a89f93;
+  --accent: #c6b598;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: radial-gradient(900px 500px at 10% -10%, #5b453022, transparent 62%),
+    radial-gradient(900px 500px at 100% 10%, #2d3c4d2a, transparent 62%),
+    #000;
+  color: var(--text);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell {
+  min-height: 100%;
+}
+
+.app-main {
+  min-height: 100dvh;
+}
+
+.legacy-view {
+  height: 100dvh;
+  min-height: 100dvh;
+  display: block;
+}
+
+.legacy-frame {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  border: 0;
+  background: #000;
+  display: block;
+}
+
+.placeholder-page {
+  max-width: 880px;
+  margin: 44px auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 22px;
+  background: #0f0d0b;
+}
+
+.placeholder-page h1 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.placeholder-page p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tasks-page {
+  max-width: 1100px;
+  margin: 28px auto;
+  padding: 0 20px 36px;
+}
+
+.tasks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.tasks-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.tasks-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.tasks-actions button,
+.task-form button,
+.row-actions button,
+.task-filters button {
+  border: 1px solid #4a3d2c;
+  background: #201910;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.tasks-actions button:hover,
+.task-form button:hover,
+.row-actions button:hover,
+.task-filters button:hover {
+  background: #2d2318;
+}
+
+.task-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0f0d0b;
+}
+
+.task-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.task-form input,
+.task-form select,
+.import-box textarea {
+  width: 100%;
+  border: 1px solid #4a4136;
+  background: #090807;
+  color: var(--text);
+  border-radius: 7px;
+  padding: 8px;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-filters {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-group .active {
+  border-color: #8f7754;
+  background: #362a1d;
+}
+
+.task-list-native {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.task-list-native article {
+  border: 1px solid #584734;
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 12px;
+  background: #0f0d0b;
+}
+
+.task-list-native article.done {
+  opacity: 0.72;
+}
+
+.task-list-native article header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.task-list-native article h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.task-list-native article span,
+.task-list-native article p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.row-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.import-box {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  background: #0f0d0b;
+}
+
+.import-box h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.error {
+  color: #e4a1a1;
+  font-size: 12px;
+}
+
+.ok {
+  color: #a8c98c;
+  font-size: 12px;
+}
+
+.settings-page-native {
+  max-width: 1100px;
+  margin: 28px auto;
+  padding: 0 20px 36px;
+}
+
+.settings-header-native {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.settings-header-native h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.settings-grid-native {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-card-native {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0f0d0b;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.settings-card-native h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.settings-card-native label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-card-native input[type='number'] {
+  border: 1px solid #4a4136;
+  background: #090807;
+  color: var(--text);
+  border-radius: 7px;
+  padding: 8px;
+}
+
+.settings-card-native button {
+  border: 1px solid #4a3d2c;
+  background: #201910;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.settings-card-native button:hover {
+  background: #2d2318;
+}
+
+.focus-page-native {
+  max-width: 1100px;
+  margin: 28px auto;
+  padding: 0 20px 36px;
+  display: grid;
+  gap: 12px;
+}
+
+.focus-header-native {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+}
+
+.focus-header-native h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.focus-header-native p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.focus-mode-buttons {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.focus-mode-buttons button,
+.focus-actions-row button,
+.focus-card-native button {
+  border: 1px solid #4a3d2c;
+  background: #201910;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.focus-mode-buttons button:hover,
+.focus-actions-row button:hover,
+.focus-card-native button:hover {
+  background: #2d2318;
+}
+
+.focus-mode-buttons button.active {
+  background: #362a1d;
+  border-color: #8f7754;
+}
+
+.focus-timer-card,
+.focus-card-native {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0f0d0b;
+  padding: 14px;
+}
+
+.focus-status-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.focus-time-display {
+  margin: 8px 0 10px;
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 56px;
+  letter-spacing: 0.03em;
+}
+
+.focus-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.focus-subtext {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.focus-card-native h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.focus-card-native ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.focus-task-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+}
+
+.focus-task-row select {
+  width: 100%;
+  border: 1px solid #4a4136;
+  background: #090807;
+  color: var(--text);
+  border-radius: 7px;
+  padding: 8px;
+}
+
+.planner-page-native,
+.calendar-page-native {
+  max-width: 1100px;
+  margin: 28px auto;
+  padding: 0 20px 36px;
+  display: grid;
+  gap: 12px;
+}
+
+.planner-header-native,
+.calendar-header-native {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 14px;
+}
+
+.planner-header-native h1,
+.calendar-header-native h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.planner-header-native p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.planner-date-controls,
+.calendar-controls-native {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.planner-date-controls button,
+.calendar-controls-native button,
+.planner-task-actions button,
+.planner-card-native button,
+.calendar-agenda-native button {
+  border: 1px solid #4a3d2c;
+  background: #201910;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.planner-date-controls button:hover,
+.calendar-controls-native button:hover,
+.planner-task-actions button:hover,
+.planner-card-native button:hover,
+.calendar-agenda-native button:hover {
+  background: #2d2318;
+}
+
+.planner-date-controls input,
+.planner-task-actions input,
+.calendar-controls-native span {
+  border: 1px solid #4a4136;
+  background: #090807;
+  color: var(--text);
+  border-radius: 7px;
+  padding: 8px;
+}
+
+.planner-grid-native {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+}
+
+.planner-card-native,
+.calendar-agenda-native {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0f0d0b;
+  padding: 14px;
+}
+
+.planner-card-native h2,
+.calendar-agenda-native h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.planner-task,
+.agenda-task-native {
+  border: 1px solid #2d261d;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #0c0a08;
+}
+
+.planner-task.done,
+.agenda-task-native.done {
+  opacity: 0.7;
+}
+
+.planner-task-main h3,
+.agenda-task-native h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.planner-task-main p,
+.agenda-task-native p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.planner-task-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planner-task-actions input {
+  max-width: 120px;
+}
+
+.calendar-grid-native {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.weekday-native {
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  background: #100e0b;
+}
+
+.calendar-cell-native {
+  min-height: 74px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #0f0d0b;
+  color: var(--text);
+  text-align: left;
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.calendar-cell-native:nth-child(7n) {
+  border-right: 0;
+}
+
+.calendar-cell-native.outside {
+  opacity: 0.55;
+}
+
+.calendar-cell-native.selected {
+  background: #201910;
+}
+
+.calendar-cell-native.today span {
+  color: #e7ce96;
+}
+
+.calendar-cell-native small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+@media (max-width: 860px) {
+  .task-form {
+    grid-template-columns: 1fr;
+  }
+
+  .task-filters {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .settings-grid-native {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-header-native {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .focus-task-row {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-time-display {
+    font-size: 48px;
+  }
+
+  .planner-header-native,
+  .calendar-header-native {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .planner-grid-native {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-cell-native {
+    min-height: 60px;
+  }
+}
