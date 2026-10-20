@@ -120,7 +120,7 @@
     .plan-task { position: absolute; top: 60px; height: 110px; text-align: left; padding: 9px 5px; border: 1px solid var(--area-color); border-radius: 5px; background: color-mix(in srgb, var(--area-color) 12%, #090908); font-size: 12px; overflow: hidden; z-index: 1; }
     .plan-task.done { opacity: .62; border-style: dashed; background-image: repeating-linear-gradient(118deg, #ffffff0e 0 1px, transparent 1px 7px), repeating-linear-gradient(32deg, #0000000f 0 1px, transparent 1px 9px); }
     .plan-task.done .plan-title { color: var(--muted); text-decoration: line-through; }
-    .plan-task.done .plan-task-action:not(.delete) { color: var(--health); }
+    .plan-task.done .plan-task-action:not(.unschedule) { color: var(--health); }
     .plan-task.settling { animation: paperSettle 520ms cubic-bezier(.22, 1.3, .36, 1); }
     @keyframes paperSettle { 0% { transform: scale(.72) rotate(-4deg); opacity: .2; } 45% { transform: scale(1.06) rotate(1.5deg); opacity: 1; } 100% { transform: none; } }
     .plan-task.crumpling { animation: paperCrumple 440ms cubic-bezier(.4, 0, .25, 1) forwards; z-index: 3; pointer-events: none; }
@@ -2031,7 +2031,7 @@
         const remaining = getTaskRemainingMinutes(task);
         const pomodoro = document.createElement('button'); pomodoro.type = 'button'; pomodoro.className = 'plan-task-action pomodoro'; pomodoro.setAttribute('aria-label', `Start pomodoro for ${task.title}`); pomodoro.title = task.done ? 'Task is completed' : `Start pomodoro (${remaining} min remaining)`; pomodoro.append(icon('timer')); pomodoro.disabled = task.done; pomodoro.onclick = () => startPomodoroForTask(task);
         const complete = document.createElement('button'); complete.type = 'button'; complete.className = 'plan-task-action'; complete.setAttribute('aria-label', `${task.done ? 'Reopen' : 'Complete'} ${task.title}`); complete.title = task.done ? 'Reopen task' : 'Complete task'; complete.append(icon(task.done ? 'rotate-ccw' : 'check')); complete.onclick = () => completeTask(task.id, block);
-        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'plan-task-action delete'; remove.setAttribute('aria-label', `Delete ${task.title}`); remove.title = 'Delete task'; remove.append(icon('trash-2')); remove.onclick = () => { deleteNodes([task.id], task.title); };
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'plan-task-action unschedule'; remove.setAttribute('aria-label', `Remove ${task.title} from this day`); remove.title = 'Remove from this day (keeps the task)'; remove.append(icon('x')); remove.onclick = () => { store.upsert({ ...task, date: null, time: null }); notify(`Removed ${task.title} from your day. It is still in All tasks.`); };
         actions.append(pomodoro, complete, remove); block.append(title, duration, actions); enableTaskDrag(block, task); track.append(block);
       });
       settlingTaskId = null;
