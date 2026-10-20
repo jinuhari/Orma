@@ -49,7 +49,7 @@ export function AppRoutes() {
           }
         />
         <Route path="/account" element={<AccountPage />} />
-        <Route path="*" element={<Navigate to="/planner" replace />} />
+        <Route path="*" element={<Navigate to="/map" replace />} />
       </Routes>
     </AppShell>
   )

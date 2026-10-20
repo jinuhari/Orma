@@ -143,7 +143,7 @@ export function LandingPage() {
     <div className="site">
       <header className="site-nav">
         <BrandLogo />
-        <Link className="site-button" to="/planner">
+        <Link className="site-button" to="/map">
           Open in browser
         </Link>
       </header>
@@ -171,7 +171,7 @@ export function LandingPage() {
                 Install on iPhone
               </a>
             ) : null}
-            <Link className="site-button" to="/planner">
+            <Link className="site-button" to="/map">
               Use on the web
             </Link>
           </div>

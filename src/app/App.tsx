@@ -8,7 +8,7 @@ import { AppRoutes } from './routes'
 
 // Installed apps skip the marketing site and open straight into the (signed-in) planner.
 function HomeRoute() {
-  return isStandalone() ? <Navigate to="/planner" replace /> : <LandingPage />
+  return isStandalone() ? <Navigate to="/map" replace /> : <LandingPage />
 }
 
 export function App() {
