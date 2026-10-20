@@ -640,29 +640,22 @@
         this.sanitize(this.tasks);
         this.publish();
       }
-      remove(id) {
-        const target = this.tasks.find(task => task.id === id);
-        if (!target) return;
-        const shouldCascade = !target.parent || target.mapRole === 'main';
-        if (!shouldCascade) {
-          this.tasks = this.tasks
-            .filter(task => task.id !== id)
-            .map(task => task.parent === id ? { ...task, parent: target.parent ?? null } : task);
-          this.publish();
-          return;
-        }
-        const toDelete = new Set([id]);
+      branch(ids) {
+        const branch = new Set(ids.filter(id => this.tasks.some(task => task.id === id)));
         let changed = true;
         while (changed) {
           changed = false;
           for (const task of this.tasks) {
-            if (task.parent && toDelete.has(task.parent) && !toDelete.has(task.id)) {
-              toDelete.add(task.id);
-              changed = true;
-            }
+            if (task.parent && branch.has(task.parent) && !branch.has(task.id)) { branch.add(task.id); changed = true; }
           }
         }
-        this.tasks = this.tasks.filter(task => !toDelete.has(task.id));
+        return branch;
+      }
+      remove(id) { this.removeMany([id]); }
+      removeMany(ids) {
+        const doomed = this.branch(ids);
+        if (!doomed.size) return;
+        this.tasks = this.tasks.filter(task => !doomed.has(task.id));
         this.publish();
       }
       toggle(id) { const task = this.tasks.find(item => item.id === id); if (task) this.upsert({ ...task, done: !task.done }); }
@@ -1601,8 +1594,9 @@
         }
       }
       let maxY = 690;
+      const hubAreas = new Set(tasks.filter(task => !task.mapRole && !(task.parent && visibleIds.has(task.parent))).map(task => task.area));
       for (const [area, root] of Object.entries(roots)) {
-        if (!tasks.length) continue;
+        if (!hubAreas.has(area)) continue;
         connect('center', center, `root-${area}`, root, areas[area].color);
         mapNode(`root-${area}`, areas[area].name, root, { color: areas[area].color, root: true, area, onActivate: event => openAreaRootEditor(area, event?.currentTarget) });
       }
@@ -1778,12 +1772,11 @@
           suppressClickUntil = Date.now() + 400;
           if (!commit) return;
           if (state.action === 'delete') {
-            if (task) { store.remove(task.id); notify(`Deleted ${task.title}`); return; }
+            if (task) { deleteNodes([task.id], task.title); return; }
             if (String(state.targetId || '').startsWith('root-')) {
               const rootArea = String(state.targetId).replace('root-', '');
-              const ids = store.tasks.filter(item => item.area === rootArea).map(item => item.id);
-              ids.forEach(id => store.remove(id));
-              notify(`${areas[rootArea]?.name || 'Area'} nodes deleted`);
+              const ids = store.tasks.filter(item => item.area === rootArea && !item.mapRole && !item.parent).map(item => item.id);
+              deleteNodes(ids, areas[rootArea]?.name || 'Area');
             }
             return;
           }
@@ -1820,6 +1813,14 @@
       element.addEventListener('pointercancel', event => finish(event, false));
       element.addEventListener('lostpointercapture', event => finish(event, false));
       if (onActivate) element.onclick = onActivate;
+    }
+    function deleteNodes(ids, label) {
+      const count = store.branch(ids).size;
+      if (!count) return false;
+      if (count > 1 && !window.confirm(`Delete "${label}" and its ${count - 1} connected node${count > 2 ? 's' : ''}?`)) return false;
+      store.removeMany(ids);
+      notify(`Deleted ${label}`);
+      return true;
     }
     function addChildNode(parentTask, area, parentPosition) {
       const siblings = store.tasks.filter(item => item.parent === (parentTask?.id ?? null) && (parentTask || item.area === area)).length;
@@ -2034,7 +2035,7 @@
         const remaining = getTaskRemainingMinutes(task);
         const pomodoro = document.createElement('button'); pomodoro.type = 'button'; pomodoro.className = 'plan-task-action pomodoro'; pomodoro.setAttribute('aria-label', `Start pomodoro for ${task.title}`); pomodoro.title = task.done ? 'Task is completed' : `Start pomodoro (${remaining} min remaining)`; pomodoro.append(icon('timer')); pomodoro.disabled = task.done; pomodoro.onclick = () => startPomodoroForTask(task);
         const complete = document.createElement('button'); complete.type = 'button'; complete.className = 'plan-task-action'; complete.setAttribute('aria-label', `${task.done ? 'Reopen' : 'Complete'} ${task.title}`); complete.title = task.done ? 'Reopen task' : 'Complete task'; complete.append(icon(task.done ? 'rotate-ccw' : 'check')); complete.onclick = () => completeTask(task.id, block);
-        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'plan-task-action delete'; remove.setAttribute('aria-label', `Delete ${task.title}`); remove.title = 'Delete task'; remove.append(icon('trash-2')); remove.onclick = () => { store.remove(task.id); notify('Task deleted'); };
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'plan-task-action delete'; remove.setAttribute('aria-label', `Delete ${task.title}`); remove.title = 'Delete task'; remove.append(icon('trash-2')); remove.onclick = () => { deleteNodes([task.id], task.title); };
         actions.append(pomodoro, complete, remove); block.append(title, duration, actions); enableTaskDrag(block, task); track.append(block);
       });
       settlingTaskId = null;
@@ -2360,7 +2361,7 @@
     const scheduleTaskInput = query('#scheduleTask');
     if (scheduleTaskInput) scheduleTaskInput.onchange = event => { query('#scheduleFields').hidden = !event.target.checked; };
     const deleteTaskButton = query('#deleteTask');
-    if (deleteTaskButton) deleteTaskButton.onclick = () => { store.remove(editingId); query('#taskDialog').close(); notify('Task deleted'); };
+    if (deleteTaskButton) deleteTaskButton.onclick = () => { const target = store.tasks.find(task => task.id === editingId); if (target && deleteNodes([target.id], target.title)) query('#taskDialog').close(); };
     centerConfig.onActivate = () => showArea('all');
     enableNodeGesture(query('#personalNode'), centerConfig);
     document.querySelectorAll('[data-timer-mode]').forEach(button => { button.onclick = () => { timer.mode = button.dataset.timerMode; timer.remaining = timerModes[timer.mode]; timer.deadline = null; timer.task = null; waterState.focusPeakHoldUntil = 0; renderTimer(); }; });

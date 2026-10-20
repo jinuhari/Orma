@@ -76,3 +76,38 @@ describe('Legacy first-use tasks', () => {
     expect(loadTasks()).toMatchObject([{ id: 'old', title: 'Older task' }])
   })
 })
+describe('Legacy node deletion', () => {
+  const html = readFileSync('public/legacy/index.html', 'utf8')
+  const script = new DOMParser().parseFromString(html, 'text/html').querySelector('body > script')!.textContent!
+  const initialization = script.slice(0, script.indexOf('    let activeArea'))
+  const task = (id: string, parent: string | null, mapRole: string | null = null) => ({ id, title: id, area: 'career', parent, mapRole })
+
+  function deleteAndList(ids: string[]) {
+    localStorage.setItem(
+      'orma.tasks.v5',
+      JSON.stringify({
+        version: 5,
+        tasks: [task('main-a', null, 'main'), task('child-a', 'main-a'), task('grandchild-a', 'child-a'), task('main-b', null, 'main'), task('child-b', 'main-b')],
+      }),
+    )
+    return runInNewContext(`${initialization}\nstore.removeMany(${JSON.stringify(ids)}); store.tasks.map(task => task.id)`, { localStorage, crypto }) as string[]
+  }
+
+  beforeEach(() => localStorage.clear())
+
+  it('deleting a main node removes only its own branch', () => {
+    expect(deleteAndList(['main-a'])).toEqual(['main-b', 'child-b'])
+  })
+
+  it('deleting a child removes only that child and its branch', () => {
+    expect(deleteAndList(['child-a'])).toEqual(['main-a', 'main-b', 'child-b'])
+  })
+
+  it('deleting a leaf removes only the leaf', () => {
+    expect(deleteAndList(['grandchild-a'])).toEqual(['main-a', 'child-a', 'main-b', 'child-b'])
+  })
+
+  it('ignores unknown ids', () => {
+    expect(deleteAndList(['missing'])).toHaveLength(5)
+  })
+})
