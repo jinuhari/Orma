@@ -1,5 +1,6 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
 
 import { env } from './env'
 
@@ -31,4 +32,8 @@ export function getFirebaseApp() {
 
 export function getFirebaseAuth() {
   return getAuth(getFirebaseApp())
+}
+
+export function getFirebaseDb() {
+  return getFirestore(getFirebaseApp())
 }

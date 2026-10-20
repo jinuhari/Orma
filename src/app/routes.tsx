@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { CalendarPage } from '../features/calendar/CalendarPage'
 import { AccountPage } from '../features/auth/AccountPage'
@@ -18,41 +18,39 @@ function PlaceholderPage({ title, note }: { title: string; note: string }) {
   )
 }
 
+// Signed-in app routes; the router and auth gate live in App.
 export function AppRoutes() {
   return (
-    <BrowserRouter>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<Navigate to="/planner" replace />} />
-          <Route path="/map" element={<LegacyOrmaView />} />
-          <Route path="/legacy" element={<LegacyOrmaView />} />
-          <Route path="/planner" element={<PlannerPage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/tasks" element={<TasksPage />} />
-          <Route path="/focus" element={<FocusPage />} />
-          <Route
-            path="/whatsapp"
-            element={
-              <PlaceholderPage
-                title="WhatsApp AI"
-                note="Not configured yet. A real backend bot integration will be added before public launch."
-              />
-            }
-          />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route
-            path="/pricing"
-            element={
-              <PlaceholderPage
-                title="Pricing"
-                note="Billing UI will move here after entitlement and webhook foundation is complete."
-              />
-            }
-          />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AppShell>
-    </BrowserRouter>
+    <AppShell>
+      <Routes>
+        <Route path="/map" element={<LegacyOrmaView />} />
+        <Route path="/legacy" element={<LegacyOrmaView />} />
+        <Route path="/planner" element={<PlannerPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/focus" element={<FocusPage />} />
+        <Route
+          path="/whatsapp"
+          element={
+            <PlaceholderPage
+              title="WhatsApp AI"
+              note="Not configured yet. A real backend bot integration will be added before public launch."
+            />
+          }
+        />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route
+          path="/pricing"
+          element={
+            <PlaceholderPage
+              title="Pricing"
+              note="Billing UI will move here after entitlement and webhook foundation is complete."
+            />
+          }
+        />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="*" element={<Navigate to="/planner" replace />} />
+      </Routes>
+    </AppShell>
   )
 }

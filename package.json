@@ -2,6 +2,7 @@
   "name": "orma",
   "private": true,
   "version": "0.1.0",
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,9 +11,20 @@
     "typecheck": "tsc -b --pretty",
     "lint": "oxlint src tests",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "pwa:build": "npm run build",
+    "mobile:sync": "npm run build && npx cap sync",
+    "mobile:ios": "npm run mobile:sync && npx cap open ios",
+    "mobile:android": "npm run mobile:sync && npx cap open android",
+    "desktop:dev": "concurrently -k \"vite --host 127.0.0.1 --port 4173 --strictPort\" \"wait-on tcp:4173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:4173 electron electron/main.cjs\"",
+    "desktop:pack": "npm run build && electron-builder --mac --win",
+    "icons": "node scripts/generate-icons.mjs",
+    "site:deploy": "npm run build && firebase deploy --only hosting,firestore:rules"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/splash-screen": "^8.0.2",
     "@supabase/supabase-js": "^2.57.4",
     "firebase": "^13.0.0",
     "react": "^19.3.1",
@@ -22,16 +34,69 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.9.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "cross-env": "^10.1.0",
+    "electron": "^44.9.1",
+    "electron-builder": "^26.15.3",
     "jsdom": "^27.0.1",
     "oxlint": "^1.88.0",
+    "sharp": "^0.35.5",
     "typescript": "~7.0.2",
     "vite": "^8.3.4",
-    "vitest": "^4.0.3"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^4.0.3",
+    "wait-on": "^9.5.1"
+  },
+  "build": {
+    "appId": "com.orma.app",
+    "productName": "Orma",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "!node_modules/**/*",
+      "electron/**/*"
+    ],
+    "protocols": [
+      {
+        "name": "Orma sign-in",
+        "schemes": [
+          "orma"
+        ]
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "artifactName": "Orma-mac.${ext}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Orma-Setup.${ext}"
+    }
   }
 }

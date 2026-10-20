@@ -19,6 +19,7 @@ coverage
 .vitest
 npm-cache
 .firebase
+release
 .agents
 .claude
 skills-lock.json

@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each signed-in Google account can only touch its own synced Orma data.
+    match /users/{uid}/store/{key} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && key.matches('orma\\..+')
+        && request.resource.data.keys().hasOnly(['value', 'updatedAt', 'device'])
+        && request.resource.data.value is string
+        && request.resource.data.value.size() < 900000
+        && request.resource.data.device is string
+        && request.resource.data.device.size() < 80
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

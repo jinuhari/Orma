@@ -227,6 +227,9 @@
     .settings-upload { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
     .settings-upload input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     .settings-file-name { color: var(--muted); font-size: 11px; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-identity { display: grid; gap: 4px; min-width: 0; }
+    .account-identity strong { font-weight: 500; color: #e8dfd2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-identity .settings-file-name { max-width: none; }
     .profile-crop-wrap { display: grid; gap: 14px; }
     .profile-crop-preview { width: 220px; height: 220px; border-radius: 50%; border: 1px solid #4c4133; margin: 2px auto 0; display: block; background: #070605; cursor: grab; touch-action: none; }
     .profile-crop-preview.dragging { cursor: grabbing; }
@@ -505,6 +508,10 @@
     <section id="settingsView" class="view" hidden><div class="panel">
       <header class="panel-header"><div><h1>Settings</h1><p class="subheading">Control timer behavior, visibility, ambience, and backups.</p></div></header>
       <div class="settings-layout">
+        <section class="settings-card" id="settingsAccountCard" aria-labelledby="settingsAccountTitle" hidden>
+          <h2 id="settingsAccountTitle">Account</h2>
+          <div class="settings-row"><div class="account-identity"><strong id="accountEmail">Signed in</strong><span class="settings-file-name" id="accountSyncStatus"></span></div><button class="secondary" id="signOutButton" type="button">Sign out</button></div>
+        </section>
         <section class="settings-card" aria-labelledby="settingsDisplayTitle">
           <h2 id="settingsDisplayTitle">Display</h2>
           <label class="settings-switch">Show completed tasks<input type="checkbox" id="showCompleted" checked></label>
@@ -2819,6 +2826,18 @@
       if (event.key === profileImageKey) applyProfileImage(event.newValue || '');
     }); store.subscribe(render); render();
     if (store.storageError) notify('Saved data could not be loaded. Browser storage may be unavailable.');
+    (function initAccountCard() {
+      let host = null;
+      try { host = window.parent !== window ? window.parent.ormaHost : null; } catch { host = null; }
+      if (!host || !host.email) return;
+      query('#settingsAccountCard').hidden = false;
+      query('#accountEmail').textContent = host.email;
+      const paintStatus = () => { const info = host.getStatus(); query('#accountSyncStatus').textContent = info.detail || info.label; };
+      paintStatus();
+      const stopStatus = host.subscribe(paintStatus);
+      window.addEventListener('pagehide', stopStatus);
+      query('#signOutButton').onclick = () => { query('#signOutButton').disabled = true; host.signOut().catch(() => { query('#signOutButton').disabled = false; notify('Could not sign out. Please try again.'); }); };
+    })();
   </script>
 </body>
 </html>

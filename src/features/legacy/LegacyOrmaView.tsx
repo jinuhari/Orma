@@ -1,7 +1,71 @@
+import { useEffect, useState } from 'react'
+
+import { onFirebaseAuthStateChanged, signOutFirebase } from '../../services/auth/firebaseAuthService'
+import {
+  CLOUD_UPDATED_EVENT,
+  getSyncStatus,
+  getSyncStatusDetail,
+  subscribeSyncStatus,
+  type SyncStatus,
+} from '../../services/sync/cloudSync'
+
+const FRAME_SAFE_KEYS = new Set(['orma.tasks.v5', 'orma.profile.image.v2'])
+
+const STATUS_LABEL: Record<SyncStatus, string> = {
+  idle: 'Not syncing',
+  syncing: 'Syncing…',
+  synced: 'Saved to your Google account',
+  offline: 'Offline · changes sync when you reconnect',
+  error: 'Sync paused',
+}
+
+// The classic map UI lives in an iframe; it reads account info and signs out through this bridge.
+function publishHost(email: string | null) {
+  window.ormaHost = {
+    email,
+    getStatus: () => ({
+      status: getSyncStatus(),
+      label: STATUS_LABEL[getSyncStatus()],
+      detail: getSyncStatusDetail(),
+    }),
+    subscribe: subscribeSyncStatus,
+    signOut: () => signOutFirebase(),
+  }
+}
+
 export function LegacyOrmaView() {
+  const [email, setEmail] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(
+    () =>
+      onFirebaseAuthStateChanged((user) => {
+        setEmail(user?.email ?? null)
+      }),
+    [],
+  )
+
+  useEffect(() => {
+    publishHost(email)
+    return () => {
+      delete window.ormaHost
+    }
+  }, [email])
+
+  useEffect(() => {
+    const onCloudUpdate = (event: Event) => {
+      const keys = (event as CustomEvent<{ keys: string[] }>).detail?.keys ?? []
+      // Tasks and the photo refresh live through the map's own storage listener.
+      if (keys.some((key) => !FRAME_SAFE_KEYS.has(key))) setReloadKey((value) => value + 1)
+    }
+    window.addEventListener(CLOUD_UPDATED_EVENT, onCloudUpdate)
+    return () => window.removeEventListener(CLOUD_UPDATED_EVENT, onCloudUpdate)
+  }, [])
+
   return (
     <section className="legacy-view" aria-label="Orma map view">
       <iframe
+        key={reloadKey}
         className="legacy-frame"
         title="Orma Legacy Application"
         src="/legacy/index.html"
