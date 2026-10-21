@@ -4,6 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __ORMA_BUILD__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -31,9 +34,26 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        // The classic map must not be frozen in the precache. Existing installs were
+        // serving that old copy even after a hosting deploy.
+        globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js', '**/legacy/**'],
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        importScripts: ['sw-clients.js'],
         // Installers and the classic map page are plain files, not SPA routes.
         navigateFallbackDenylist: [/^\/downloads\//, /^\/legacy\//, /^\/__\//],
         runtimeCaching: [
+          {
+            urlPattern: /\/legacy\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'orma-legacy',
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
           {
             urlPattern: /^https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|unpkg\.com)\//,
             handler: 'StaleWhileRevalidate',

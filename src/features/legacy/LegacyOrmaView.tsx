@@ -73,7 +73,7 @@ export function LegacyOrmaView() {
         key={reloadKey}
         className="legacy-frame"
         title="Orma Legacy Application"
-        src="/legacy/index.html"
+        src={`/legacy/index.html?v=${encodeURIComponent(__ORMA_BUILD__)}`}
       /> : null}
     </section>
   )

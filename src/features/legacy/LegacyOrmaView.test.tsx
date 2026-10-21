@@ -34,7 +34,7 @@ describe('Legacy Settings account bridge', () => {
     const { unmount } = render(<LegacyOrmaView />)
     expect(screen.queryByTitle('Orma Legacy Application')).not.toBeInTheDocument()
     act(() => notifyAuth({ email: 'person@example.com' } as User))
-    expect(screen.getByTitle('Orma Legacy Application')).toBeInTheDocument()
+    expect(screen.getByTitle('Orma Legacy Application')).toHaveAttribute('src', expect.stringMatching(/^\/legacy\/index\.html\?v=/))
     expect(window.ormaHost?.email).toBe('person@example.com')
     expect(window.ormaHost?.getStatus().label).toBe('Saved to your Orma account')
     await window.ormaHost?.signOut()
